@@ -5,20 +5,35 @@
   <title>A Steemit Web App</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css">
-  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 
 <body>
   <div id="container" class="container">
 
-  // Content goes here
+      <div class="row">
+        <div class="form-group col-6">
+          <label>User Name</label>
+          <input class="form-control" type="text" v-model.lazy="user">
+        </div>
+      </div>
+      <pre>{{ userData }}</pre>
+      <div>
+        <h2>{{user}}</h2>
+        <img v-bind:src="userData.profile_image" />
+        <br />
+        <p><i class=""></i> XP: {{userData.xp}}</p>
+        <p><i class=""></i> Power: {{userData.power}}</p>
+        <p><i class=""></i> Following: {{userData.following_count}}</p>
+        <p><i class=""></i> Follower: {{userData.follower_count}}</p>
+      </div>
 
   </div>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
-  <script src="//cdn.steemjs.com/lib/latest/steem.min.js"></script>
-  <script src="//unpkg.com/vue"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+  <script src="http://cdn.steemjs.com/lib/latest/steem.min.js"></script>
+  <script src="http://unpkg.com/vue"></script>
 
 
   <script>
@@ -33,7 +48,9 @@
               profile_image: "",
               level: 0,
               xp: 0,
-              power: 0
+              power: 0,
+              following_count: 0,
+              follower_count: 0
             }
           },
           // Set up watcher to detect changes
@@ -82,8 +99,10 @@
           }
           // Continually update user depending upon username
           function refreshAccountData(accountName) {
+            // Bluebird promisify
             return steem.api.getAccountsAsync([accountName])
               .then(function (result) {
+                // Found no user
                 if (result.length == 0) {
                   vm.userData = {
                     profile_image: "",
@@ -93,7 +112,7 @@
                   }
                   return
                 }
-
+                // Try catch to keep trying to get user
                 try {
                   let profile = JSON.parse(result[0].json_metadata).profile
 
@@ -104,10 +123,20 @@
                 catch (err) {
                   do_setDefaultUserProfilePic()
                 }
-
+                // Set userdata received
                 vm.$set(vm.userData, 'level', calcLevel(result[0].reputation))
                 vm.$set(vm.userData, 'xp', calcXP(result[0].reputation))
                 vm.$set(vm.userData, 'power', result[0].voting_power / 100)
+
+                // Get followers
+                steem.api.getFollowCountAsync(accountName)
+                  .then(function (result) {
+                    vm.$set(vm.userData, 'follower_count', result.follower_count)
+                    vm.$set(vm.userData, 'following_count', result.following_count)
+                  })
+                .catch(console.error)
+
+
               })
               .catch(console.error)
           }

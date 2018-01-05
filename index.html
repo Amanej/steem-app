@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>A Steemit Web App</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+  <div id="container" class="container">
+
+  // Content goes here
+
+  </div>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+  <script src="//cdn.steemjs.com/lib/latest/steem.min.js"></script>
+  <script src="//unpkg.com/vue"></script>
+
+
+  <script>
+      // Vue object
+      {
+        // Set up viewmodel for Vue.js
+        let vm = new Vue({
+          el: '#container',
+          data: {
+            user: 'jfollas',
+            userData: {
+              profile_image: "",
+              level: 0,
+              xp: 0,
+              power: 0
+            }
+          },
+          // Set up watcher to detect changes
+          watch: {
+            // Detect changing user
+            user: function (u) {
+              setDefaultUserProfilePic()
+              refreshAccountData(u)
+            }
+          }
+        })
+        // Calculate reputation
+          // Format to get whole number
+          function calcLevel(v) {
+            return Math.floor(calcReputation(v))
+          }
+          // Format to get percentage
+          function calcXP(v) {
+            let r = calcReputation(v);
+            return 100 * (r - Math.floor(r))
+          }
+          // Helper function to calculate
+          function log10(str) {
+            let $str = str.toString()
+            const leadingDigits = parseInt($str.substring(0, 4))
+            const log = Math.log(leadingDigits) / Math.log(10)
+            const n = $str.length - 1
+            return n + (log - parseInt(log))
+          }
+          // Reputation calculation
+          function calcReputation(value) {
+            if (value == null || value == 0) return 0;
+
+            let neg = value < 0
+            let reputation_level = log10(value) - 9;
+            if (reputation_level < 0) reputation_level = 0;
+            if (neg) reputation_level *= -1;
+
+            return reputation_level * 9 + 25;
+          }
+
+        // Get user assets
+          // Profile Pic
+          function setDefaultUserProfilePic() {
+            vm.$set(vm.userData, 'profile_image', 'https://www.gravatar.com/avatar/000000000000000000000000000000000?d=mm&amp;f=y')
+          }
+          // Continually update user depending upon username
+          function refreshAccountData(accountName) {
+            return steem.api.getAccountsAsync([accountName])
+              .then(function (result) {
+                if (result.length == 0) {
+                  vm.userData = {
+                    profile_image: "",
+                    level: 0,
+                    xp: 0,
+                    power: 0
+                  }
+                  return
+                }
+
+                try {
+                  let profile = JSON.parse(result[0].json_metadata).profile
+
+                  if (profile.profile_image != null) {
+                    vm.$set(vm.userData, 'profile_image', profile.profile_image)
+                  }
+                }
+                catch (err) {
+                  do_setDefaultUserProfilePic()
+                }
+
+                vm.$set(vm.userData, 'level', calcLevel(result[0].reputation))
+                vm.$set(vm.userData, 'xp', calcXP(result[0].reputation))
+                vm.$set(vm.userData, 'power', result[0].voting_power / 100)
+              })
+              .catch(console.error)
+          }
+        // Initate function to get user first time
+        refreshAccountData(vm.user)
+      }
+    </script>
+
+
+</body>
+
+</html>

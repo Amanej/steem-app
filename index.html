@@ -19,7 +19,7 @@
         </div>
       </div>
       <pre>{{ userData }}</pre>
-      <div>
+      <div class="row">
         <h2>{{user}}</h2>
         <img v-bind:src="userData.profile_image" />
         <br />
@@ -27,6 +27,37 @@
         <p><i class=""></i> Power: {{userData.power}}</p>
         <p><i class=""></i> Following: {{userData.following_count}}</p>
         <p><i class=""></i> Follower: {{userData.follower_count}}</p>
+      </div>
+
+      <div class="row">
+
+        <div class="col-4">
+          <h2>Followers</h2>
+          <ul class="list-group">
+            <li class="list-group-item" v-for="p in followers">
+              {{ p.name }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="col-4">
+          <h2>Following</h2>
+          <ul class="list-group">
+            <li class="list-group-item" v-for="p in following">
+              {{ p.name }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="col-4">
+          <h2>Muted</h2>
+          <ul class="list-group">
+            <li class="list-group-item" v-for="p in ignored">
+              {{ p.name }}
+            </li>
+          </ul>
+        </div>
+
       </div>
 
   </div>
@@ -51,7 +82,10 @@
               power: 0,
               following_count: 0,
               follower_count: 0
-            }
+            },
+            followers: [],
+            following: [],
+            ignored: []
           },
           // Set up watcher to detect changes
           watch: {
@@ -136,12 +170,73 @@
                   })
                 .catch(console.error)
 
+                // List followers, following and ignored
+                getFollowersList();
+                getFollowingList();
+                getIgnoredList();
+
 
               })
               .catch(console.error)
           }
         // Initate function to get user first time
-        refreshAccountData(vm.user)
+        refreshAccountData(vm.user);
+
+        // Get followers listed
+        let getFollowersList = P.coroutine(function* () {
+          let start = '', count = 0
+          vm.followers = []
+          do {
+            yield steem.api.getFollowersAsync(vm.user, start, 'blog', 1000)
+              .then(function (result) {
+                start = ''
+                count = result.length
+
+                for (let i = 0; i < count; i++) {
+                  let entry = { name: result[i].follower }
+                  start = entry.name
+                  vm.followers.push(entry)
+                }
+              })
+          } while (count === 1000);
+        })
+        // Get following listed
+        let getFollowingList = P.coroutine(function* () {
+          let start = '', count = 0
+          vm.following = []
+          do {
+            yield steem.api.getFollowingAsync(vm.user, start, 'blog', 100)
+              .then(function (result) {
+                start = ''
+                count = result.length
+
+                for (let i = 0; i < count; i++) {
+                  let entry = { name: result[i].following }
+                  start = entry.name
+                  vm.following.push(entry)
+                }
+              })
+          } while (count === 100);
+        })
+        // Get Ignored listed
+        let getIgnoredList = P.coroutine(function* () {
+          let start = '', count = 0
+          vm.ignored = []
+          do {
+            yield steem.api.getFollowingAsync(vm.user, start, 'ignore', 100)
+              .then(function (result) {
+                start = ''
+                count = result.length
+
+                for (let i = 0; i < count; i++) {
+                  let entry = { name: result[i].following }
+                  start = entry.name
+                  vm.ignored.push(entry)
+                }
+              })
+          } while (count === 100);
+        })
+
       }
     </script>
 

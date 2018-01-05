@@ -20,13 +20,29 @@
       </div>
       <pre>{{ userData }}</pre>
       <div class="row">
-        <h2>{{user}}</h2>
-        <img v-bind:src="userData.profile_image" />
-        <br />
-        <p><i class=""></i> XP: {{userData.xp}}</p>
-        <p><i class=""></i> Power: {{userData.power}}</p>
-        <p><i class=""></i> Following: {{userData.following_count}}</p>
-        <p><i class=""></i> Follower: {{userData.follower_count}}</p>
+        <div class="container">
+          <h2 class="col-12">{{user}}</h2>
+        </div>
+        <div class="container">
+          <img v-bind:src="userData.profile_image" />
+          <br /><br />
+        </div>
+        <div class="container">
+          <ul class="list-group">
+            <li class="list-group-item">
+              <p><i class=""></i> XP: {{userData.xp}}</p>
+            </li>
+            <li class="list-group-item">
+              <p><i class=""></i> Power: {{userData.power}}</p>
+            </li>
+            <li class="list-group-item">
+              <p><i class=""></i> Following: {{userData.following_count}}</p>
+            </li>
+            <li class="list-group-item">
+              <p><i class=""></i> Follower: {{userData.follower_count}}</p>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div class="row">

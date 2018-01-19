@@ -84,6 +84,9 @@
 
 
   <script>
+      // Steem js config
+      //steem.config.set('websocket','wss://this.piston.rocks');
+      steem.api.setOptions({ url: 'https://api.steemit.com'});
       // Vue object
       {
         // Set up viewmodel for Vue.js
@@ -152,6 +155,7 @@
             // Bluebird promisify
             return steem.api.getAccountsAsync([accountName])
               .then(function (result) {
+                console.log(result);
                 // Found no user
                 if (result.length == 0) {
                   vm.userData = {

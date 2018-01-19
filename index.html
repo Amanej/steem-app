@@ -76,6 +76,15 @@
 
       </div>
 
+      <!-- Follow user -->
+      <div class="row">
+        <div class="col-12">
+          <input class="form-control" type="text" v-model="wif" placeholder="Enter your WIF ie posting key" />
+          <input class="form-control" type="text" v-model="followUser" placeholder="User you want to follow" />
+          <button class="btn btn-default" v-on:click="follow">Follow</button>
+        </div>
+      </div>
+
   </div>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
@@ -93,7 +102,7 @@
         let vm = new Vue({
           el: '#container',
           data: {
-            user: 'jfollas',
+            user: 'amanmender', //jfollas
             userData: {
               profile_image: "",
               level: 0,
@@ -104,7 +113,9 @@
             },
             followers: [],
             following: [],
-            ignored: []
+            ignored: [],
+            wif: "",
+            followUser: []
           },
           // Set up watcher to detect changes
           watch: {
@@ -112,6 +123,19 @@
             user: function (u) {
               setDefaultUserProfilePic()
               refreshAccountData(u)
+            }
+          },
+          methods: {
+            follow: function(e) {
+              console.log("Trying to follow user");
+              //console.log(this._data);
+              //console.log(this._data.userData);
+              console.log(this.user);
+              console.log(this.wif);
+              console.log(this.followUser);
+              if(this.wif) {
+                followUser(this.user,this.followUser,["blog"],this.wif);
+              }
             }
           }
         })
@@ -256,6 +280,59 @@
               })
           } while (count === 100);
         })
+        // Get Trending Tags
+        let getTagsList = P.coroutine(function* () {
+          let start = ''
+          let count = 0
+          let allTags = []
+
+          do {
+            yield steem.api.getTrendingTagsAsync(start, 1000)
+              .then(function (result) {
+                if (result == null || result.length == 0) {
+                  count = 0
+                } else {
+                  count = result.length
+                  start = result[count - 1].name
+                  Array.prototype.push.apply(allTags, result)
+                }
+              })
+              .catch(function(err) {
+                // There seems to be an error in the data or node code that causes requests
+                // at the bottom of the list to fail (i.e., data after tag "yunks"). For the
+                // sake of this demo, we will just exit
+                count = 0;
+              })
+          } while (count === 1000);
+
+          return allTags
+        })
+
+        // Find similiar tags
+        function findSimilarTags (allTags, tag) {
+          const input = tag.toLowerCase()
+          const filtered = _.filter(allTags, function(t) {
+            return t.name === input || t.name === _.deburr(input) || t.name === input.replace(/\W/g, '')
+          })
+          console.log(filtered)
+        }
+
+        //findSimilarTags(allTags, "steem-dev")
+        //getTagsList().then(console.log)
+
+        // Posting functions
+        let followUser = function(follower,following,what,wif) {
+          let followReq = ["follow"]
+          followReq.push({follower: follower, following: following, what: what})
+          //followReq.push({follower: "you", following: "someone_else", what: ["blog"]})
+
+          const customJson = JSON.stringify(followReq)
+
+          steem.broadcast.customJsonAsync(wif, [], [follower], "follow", customJson)
+          .then(console.log)
+          .catch(console.log)
+        }
+
 
       }
     </script>

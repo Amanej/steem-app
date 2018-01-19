@@ -85,6 +85,35 @@
         </div>
       </div>
 
+
+      <!-- See Tags -->
+      <div class="row">
+        <input class="form-control" type="text" v-model="tag" placeholder="Enter tag you want" />
+        <div class="col-12">
+          <ul class="list-group">
+            <li class="list-group-item" v-for="t in tags">
+              <p>
+                {{t.name}} - {{t.total_payouts}} - {{t.net_votes}}
+              </p>
+              <button class="btn btn-default" v-on:click="seeTrendingForTag(t.name)">See Trending Posts</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="row">
+
+        <h1>Trending for tag: steemdev</h1>
+        <ul class="list-group">
+          <li class="list-group-item" v-for="c in content">
+            <h3>{{c.title}}</h3>
+            <p v-html="c.body"></p>
+          </li>
+        </ul>
+        <button class="btn btn-default" v-on:click="getTrendingFrontpageForTag">Get Frontpage Content</button>
+      </div>
+
   </div>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
@@ -115,7 +144,10 @@
             following: [],
             ignored: [],
             wif: "",
-            followUser: []
+            followUser: [],
+            tag: "steemdev",
+            tags: [],
+            content: []
           },
           // Set up watcher to detect changes
           watch: {
@@ -123,6 +155,9 @@
             user: function (u) {
               setDefaultUserProfilePic()
               refreshAccountData(u)
+            },
+            tag: function(t) {
+              getTagsListMax(t);
             }
           },
           methods: {
@@ -136,6 +171,14 @@
               if(this.wif) {
                 followUser(this.user,this.followUser,["blog"],this.wif);
               }
+            },
+            seeTrendingForTag: function(t) {
+              //console.log(e);
+              //console.log(this);
+              getState(t);
+            },
+            getTrendingFrontpageForTag: function() {
+              getState();
             }
           }
         })
@@ -218,7 +261,7 @@
                 getFollowersList();
                 getFollowingList();
                 getIgnoredList();
-
+                //getTagsListMax();
 
               })
               .catch(console.error)
@@ -305,8 +348,24 @@
               })
           } while (count === 1000);
 
+          console.log("All Tags");
+          console.log(allTags);
+          //vm.tags = allTags;
           return allTags
         })
+        // Get Trending Top Tags
+        let getTagsListMax = P.coroutine(function* (t) {
+          console.log("T "+t);
+          steem.api.getTrendingTagsAsync(t, 10)
+          .then(function(result) {
+            vm.tags = result;
+          })
+          .catch(function(err) {
+            console.error(err);
+          })
+        });
+        // Initate to fill posts
+        getTagsListMax(vm.tag);
 
         // Find similiar tags
         function findSimilarTags (allTags, tag) {
@@ -331,6 +390,32 @@
           steem.broadcast.customJsonAsync(wif, [], [follower], "follow", customJson)
           .then(console.log)
           .catch(console.log)
+        }
+
+        // Content functions
+        // Get state - generic frontpage content
+        let getState = function() {
+          steem.api.getStateAsync('trending/steemdev')
+          //.then(r => console.log(JSON.stringify(r,null,2)))
+          .then(function(r) {
+              console.log(r.content)
+              vm.content = r.content
+              //vm.$set(vm.content, r.content))
+              //vm.content = r.content;
+            }
+          )
+          .catch(console.log)
+        }
+        //getState();
+        // Replies
+        let getContentPerUser = function(author,permlink) {
+          steem.api.getContentAsync(author, permlink)
+            .then(function(post) {
+              steem.api.getContentRepliesAsync(author, permlink)
+                .then(function(replies) {
+                  console.log(JSON.stringify(replies, null, 2));
+                });
+            });
         }
 
 
